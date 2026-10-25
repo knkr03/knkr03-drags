@@ -1,0 +1,11 @@
+# Working material kept out of the repository
+_source/
+.venv/
+dist/
+*.rar
+
+# Local tooling / OS noise
+node_modules/
+.DS_Store
+Thumbs.db
+*.log

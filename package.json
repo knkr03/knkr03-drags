@@ -1,0 +1,20 @@
+{
+  "name": "knkr03-drags",
+  "version": "0.1.5",
+  "private": true,
+  "description": "Wall-aware token drag pathfinding bridge for Foundry VTT v13",
+  "type": "module",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/knkr03/knkr03-drags.git"
+  },
+  "homepage": "https://github.com/knkr03/knkr03-drags",
+  "bugs": {
+    "url": "https://github.com/knkr03/knkr03-drags/issues"
+  },
+  "author": "knkr03",
+  "scripts": {
+    "test": "node --test tests/pathfinder.test.mjs tests/planner.test.mjs tests/budget.test.mjs tests/walls.test.mjs tests/bridge.test.mjs tests/module.test.mjs tests/perf.test.mjs",
+    "build": "node tools/build.mjs"
+  }
+}

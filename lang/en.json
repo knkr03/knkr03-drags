@@ -1,0 +1,22 @@
+{
+  "KDRAGS.keybindings.bypass.name": "Bypass pathfinding (hold)",
+  "KDRAGS.keybindings.bypass.hint": "Hold this key while dragging to ignore pathfinding, wall collision and the movement clamp. Release it to route the drag again.",
+  "KDRAGS.settings.enabled.name": "Enable drag pathfinding",
+  "KDRAGS.settings.enabled.hint": "Route dragged tokens around walls while the drag is in progress. When disabled, Foundry's native drag behaviour is used.",
+  "KDRAGS.settings.enforceBudget.name": "Limit movement by the actor's rate",
+  "KDRAGS.settings.enforceBudget.hint": "Cut each drag at the actor's movement rate minus the movement already recorded this turn. When the rate is spent, the next drag is allowed twice the rate.",
+  "KDRAGS.settings.movementAttribute.name": "Movement attribute path",
+  "KDRAGS.settings.movementAttribute.hint": "Data path on the actor, for example system.attributes.movement.walk. Leave empty to detect common system paths automatically.",
+  "KDRAGS.settings.fallbackSpeed.name": "Fallback movement (grid spaces)",
+  "KDRAGS.settings.fallbackSpeed.hint": "Movement allowed per drag when the actor's movement rate cannot be read. Set to 0 for no budget at all.",
+  "KDRAGS.settings.footprintScale.name": "Footprint scale",
+  "KDRAGS.settings.footprintScale.hint": "The token is modelled as a disc of half its largest dimension times this scale. Lower it to let tokens squeeze through gaps they visually fit.",
+  "KDRAGS.settings.gridCell.name": "Pathfinding grid cell (px)",
+  "KDRAGS.settings.gridCell.hint": "A* cell size in pixels. Smaller is more accurate and slower; 8 px matches the original pathfinder.",
+  "KDRAGS.settings.clearancePad.name": "Extra wall clearance (px)",
+  "KDRAGS.settings.clearancePad.hint": "Extra clearance beyond the token footprint the route keeps. 0 lets a token use a corridor it exactly fits; 2-4 gives smoother routes but can refuse a perfect-fit gap.",
+  "KDRAGS.settings.drawBeyondBudget.name": "Draw the route beyond the budget",
+  "KDRAGS.settings.drawBeyondBudget.hint": "Draw the part of the path past the movement budget in blue, plus a ghost disc where the token will stop.",
+  "KDRAGS.settings.debug.name": "Debug logging",
+  "KDRAGS.settings.debug.hint": "Log each drag plan (path length, budget, timing) to the browser console."
+}
