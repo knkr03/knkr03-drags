@@ -388,6 +388,23 @@ test("a running combat switches the budget to the extending clamp", () => {
   globalThis.game.combat = null;
 });
 
+test("a third drag in combat is unlimited", () => {
+  const token = new FakeToken({ id: "token-combat-release", usedCost: 60 });
+  token.document.combatant = { id: "combatant-2" };
+  globalThis.game.combat = { started: true };
+  makeDrag(token);
+
+  const job = token.findMovementPath([waypoint(30, 70), waypoint(270, 70)], { preview: true });
+  const plan = bridgeState().activePlans[0];
+  assert.equal(plan.budgetMode, "combat");
+  assert.equal(plan.clampTotal, Infinity, "the second clamp is spent, so there is no clamp");
+  assert.equal(plan.budgetPx, null, "unlimited budget");
+  assert.equal(plan.cut, false);
+  assert.equal(job.result.at(-1).x, 270, "the drag should reach the drop point");
+
+  globalThis.game.combat = null;
+});
+
 test("every answer still chains into Foundry's own pathfinder", () => {
   // libWrapper unregisters -- and throws from -- a WRAPPER that returns
   // without calling through. FakeToken#findMovementPath records the chained

@@ -146,14 +146,14 @@ px     = budget / grid.distance * grid.size
 ```
 
 In a running combat, for any token that has a combatant, the clamp extends by
-one base rate each time it is used up, which allows several clamped moves per
-turn:
+one base rate and is released after the second one, so the turn gets two
+clamped moves and then unlimited movement:
 
 ```
 spent  0 -> clamp 30, move up to 30
 spent 30 -> clamp 60, move up to 30 again
 spent 45 -> clamp 60, move up to 15
-spent 60 -> clamp 90, move up to 30 again
+spent 60 -> unlimited for the rest of the turn
 px = available / grid.distance * grid.size
 ```
 

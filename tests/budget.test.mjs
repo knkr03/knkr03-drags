@@ -118,13 +118,23 @@ test("the combat clamp extends by one base rate each time it is used up", () => 
   assert.equal(combatClampTotal(30, 45), 60);
   assert.ok(Math.abs(combatClamp(30, 59.9) - 0.1) < 1e-9);
 
-  // second clamp also spent: 90 total, another 30 available
-  assert.equal(combatClamp(30, 60), 30);
-  assert.equal(combatClampTotal(30, 60), 90);
-  assert.equal(combatClamp(30, 95), 25);
-  assert.equal(combatClampTotal(30, 95), 120);
+  // second clamp also spent: the rest of the turn is unlimited
+  assert.equal(combatClamp(30, 60), Infinity);
+  assert.equal(combatClampTotal(30, 60), Infinity);
+  assert.equal(combatClamp(30, 95), Infinity);
+  assert.equal(combatClampTotal(30, 95), Infinity);
 
   assert.equal(combatClamp(Infinity, 10), Infinity);
+});
+
+test("the combat clamp is released once the second clamp is spent", () => {
+  // 59.9 is still inside the second clamp
+  assert.ok(Math.abs(combatClamp(30, 59.9) - 0.1) < 1e-9);
+  assert.equal(combatClampTotal(30, 59.9), 60);
+
+  // a token nudged a hair past the clamp is released too
+  assert.equal(combatClamp(30, 60.2), Infinity);
+  assert.equal(combatClampTotal(30, 60.2), Infinity);
 });
 
 test("in combat the budget uses the extending clamp instead of the doubling rule", () => {
@@ -143,6 +153,15 @@ test("in combat the budget uses the extending clamp instead of the doubling rule
   const outside = movementBudget({ rate: 30, used: 30, grid });
   assert.equal(outside.mode, "standard");
   assert.equal(outside.budgetPx, 1200, "outside combat the doubling rule is unchanged");
+});
+
+test("in combat the third drag is unlimited", () => {
+  const released = movementBudget({ rate: 30, used: 60, grid, combat: true });
+  assert.equal(released.mode, "combat");
+  assert.equal(released.limited, false);
+  assert.equal(released.budgetPx, Infinity);
+  assert.equal(released.allowed, Infinity);
+  assert.equal(released.clampTotal, Infinity);
 });
 
 test("the combat clamp also extends the fallback rate", () => {

@@ -2,7 +2,7 @@
   "id": "knkr03-drags",
   "title": "knkr03 drags",
   "description": "Wall-aware token dragging: a bridge reads the drag from Foundry v13, a pathfinder routes around scene walls, and the path is drawn back on the canvas and committed as a multi-waypoint movement.",
-  "version": "0.1.6",
+  "version": "0.1.7",
   "authors": [
     {
       "name": "knkr03"
@@ -25,7 +25,7 @@
   "socket": false,
   "url": "https://github.com/knkr03/knkr03-drags",
   "manifest": "https://github.com/knkr03/knkr03-drags/releases/latest/download/module.json",
-  "download": "https://github.com/knkr03/knkr03-drags/releases/download/v0.1.6/knkr03-drags-v0.1.6.zip",
+  "download": "https://github.com/knkr03/knkr03-drags/releases/download/v0.1.7/knkr03-drags-v0.1.7.zip",
   "readme": "https://github.com/knkr03/knkr03-drags#readme",
   "bugs": "https://github.com/knkr03/knkr03-drags/issues"
 }

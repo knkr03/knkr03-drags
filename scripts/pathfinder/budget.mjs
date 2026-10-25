@@ -9,6 +9,10 @@
  *   budget   = rate - spent            while some movement remains
  *   budget   = rate * 2                when the rate is already used up
  *
+ * In combat the clamp instead extends once and is then released (see
+ * combatClamp): two clamped moves, then unlimited movement for the rest of the
+ * turn.
+ *
  * Everything here is plain maths on plain objects so it can be tested in Node
  * without Foundry.
  */
@@ -81,15 +85,17 @@ export function allowedMovement(rate, used) {
 }
 
 /**
- * Combat allowance: the clamp extends by one base rate each time it is used up.
+ * Combat allowance: the clamp extends by one base rate, and is released after
+ * the second one. A combatant gets two clamped moves per turn; from the third
+ * drag on, movement is unlimited until the turn ends.
  *
- *   spent 0  -> clamp 30, 30 available
- *   spent 30 -> clamp 60, 30 available
- *   spent 45 -> clamp 60, 15 available
- *   spent 60 -> clamp 90, 30 available
+ *   spent 0  -> clamp 30,  30 available
+ *   spent 30 -> clamp 60,  30 available
+ *   spent 45 -> clamp 60,  15 available
+ *   spent 60 -> unlimited
  *
- * That is what lets a combatant take several base-length moves in one turn
- * while the clamp (the ruler's total limit) keeps growing.
+ * The history is cleared when the combatant's turn starts or ends, so the
+ * clamps and the release are per turn.
  *
  * @param {number} rate   base rate in scene units
  * @param {number} used   scene units already spent this turn
@@ -98,14 +104,16 @@ export function allowedMovement(rate, used) {
 export function combatClamp(rate, used) {
   if (!Number.isFinite(rate) || rate <= 0) return Infinity;
   const spent = Number.isFinite(used) ? Math.max(0, used) : 0;
+  if (spent >= rate * 2 - 1e-9) return Infinity;
   const level = Math.floor(spent / rate + 1e-9) + 1;
   return Math.max(0, rate * level - spent);
 }
 
-/** Total clamp distance in combat for the movement already spent. */
+/** Total clamp distance in combat, or Infinity once the second clamp is spent. */
 export function combatClampTotal(rate, used) {
   if (!Number.isFinite(rate) || rate <= 0) return Infinity;
   const spent = Number.isFinite(used) ? Math.max(0, used) : 0;
+  if (spent >= rate * 2 - 1e-9) return Infinity;
   const level = Math.floor(spent / rate + 1e-9) + 1;
   return rate * level;
 }
