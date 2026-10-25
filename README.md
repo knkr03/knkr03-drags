@@ -157,6 +157,11 @@ spent 60 -> unlimited for the rest of the turn
 px = available / grid.distance * grid.size
 ```
 
+A leftover smaller than two screen pixels is treated as spent. Waypoints are
+handed to Foundry as whole pixels, so a drag that stopped exactly on a clamp
+records a hair less than the clamp (29.99 ft of 30 ft); without this the next
+drag would offer that unusable sliver instead of the next clamp.
+
 `api.state().activePlans[].budgetMode` reports `combat`, `standard` or
 `unlimited`, and `clampTotal` the current combat clamp distance.
 

@@ -13,6 +13,7 @@ export {
   allowedMovement,
   combatClamp,
   combatClampTotal,
+  sliverTolerance,
   unitsToPixels,
   movementBudget
 } from "./budget.mjs";

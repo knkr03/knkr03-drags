@@ -247,16 +247,34 @@ test("findMovementPath answers with a routed, wall-clear path", () => {
 });
 
 test("the plan is budget-limited by rate and movement history", () => {
-  const token = new FakeToken({ id: "token-budget", usedCost: 29.9 });
+  const token = new FakeToken({ id: "token-budget", usedCost: 29.7 });
   makeDrag(token);
   const job = token.findMovementPath([waypoint(30, 70), waypoint(270, 70)], { preview: true });
   const path = job.result;
 
-  // 0.1 ft remaining on a 5 ft / 100 px grid is 2 px of travel
-  assert.equal(path.length, 2, "a 2 px budget should produce origin + stop");
+  // 0.3 ft remaining on a 5 ft / 100 px grid is 6 px of travel
+  assert.equal(path.length, 2, "a 6 px budget should produce origin + stop");
   const travel = polylineLength(path);
-  assert.ok(travel <= 3, `travel ${travel.toFixed(2)} px`);
+  assert.ok(travel <= 7, `travel ${travel.toFixed(2)} px`);
   assert.notEqual(path[path.length - 1].x, 270);
+});
+
+test("a drag that stopped a hair under the clamp still gets the next clamp", () => {
+  // the reported case: 29.9914 ft recorded after a move that stopped on the
+  // 30 ft clamp, because the waypoints handed to Foundry are whole pixels
+  const token = new FakeToken({ id: "token-sliver", usedCost: 29.9914 });
+  token.document.combatant = { id: "combatant-sliver" };
+  globalThis.game.combat = { started: true };
+  makeDrag(token);
+
+  const job = token.findMovementPath([waypoint(30, 70), waypoint(270, 70)], { preview: true });
+  const plan = bridgeState().activePlans[0];
+  assert.equal(plan.budgetMode, "combat");
+  assert.equal(plan.clampTotal, 60, "the first clamp counts as used up");
+  assert.equal(plan.cut, false);
+  assert.equal(job.result.at(-1).x, 270);
+
+  globalThis.game.combat = null;
 });
 
 test("a spent rate doubles the budget on the next drag", () => {
@@ -271,7 +289,7 @@ test("a spent rate doubles the budget on the next drag", () => {
 });
 
 test("the drag preview is parked on the point the token will reach", () => {
-  const token = new FakeToken({ id: "token-preview", usedCost: 29.9 });
+  const token = new FakeToken({ id: "token-preview", usedCost: 29.7 });
   const { context, preview, event } = makeDrag(token, waypoint(270, 70));
 
   token.findMovementPath([waypoint(30, 70), waypoint(270, 70)], { preview: true });
@@ -280,7 +298,7 @@ test("the drag preview is parked on the point the token will reach", () => {
   assert.notEqual(preview.document.x, 270, "preview stayed on the unreachable drop point");
   const stop = bridgeState().activePlans[0];
   assert.equal(stop.cut, true);
-  assert.ok(Math.hypot(preview.document.x - 30, preview.document.y - 70) < 5);
+  assert.ok(Math.hypot(preview.document.x - 30, preview.document.y - 70) < 8);
   assert.equal(context.foundPath.length, 1);
 });
 

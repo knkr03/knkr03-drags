@@ -71,17 +71,36 @@ export function resolveMovementRate(actor, { attribute = "", paths = RATE_PATHS 
 }
 
 /**
+ * A sliver of leftover movement smaller than this is not a move. Foundry
+ * measures the path between the waypoints it is given, and those are rounded to
+ * whole pixels, so a drag that stopped exactly on a clamp records a hair less
+ * than the clamp. Without this the next drag would be offered the leftover
+ * 0.01 ft instead of the next clamp, with no way to spend it.
+ *
+ * @param {object} grid    {size, distance}
+ * @param {number} [pixels] size of the sliver, in screen pixels
+ * @returns {number}       the same distance in scene units
+ */
+export function sliverTolerance(grid, pixels = 2) {
+  const size = grid?.size;
+  const distance = grid?.distance;
+  if (!Number.isFinite(size) || size <= 0 || !Number.isFinite(distance) || distance <= 0) return 0;
+  return (distance / size) * Math.max(0, pixels);
+}
+
+/**
  * Movement allowance for one drag.
  *
- * @param {number} rate     scene units available per turn (Infinity for no limit)
- * @param {number} used     scene units already recorded in movement history
- * @returns {number}        scene units allowed on the next drag
+ * @param {number} rate         scene units available per turn (Infinity for no limit)
+ * @param {number} used         scene units already recorded in movement history
+ * @param {number} [tolerance]  leftover below this counts as spent (see sliverTolerance)
+ * @returns {number}            scene units allowed on the next drag
  */
-export function allowedMovement(rate, used) {
+export function allowedMovement(rate, used, tolerance = 0) {
   if (!Number.isFinite(rate) || rate <= 0) return Infinity;
   const spent = Number.isFinite(used) ? Math.max(0, used) : rate;
   const remaining = rate - spent;
-  return remaining > 0 ? remaining : rate * 2;
+  return remaining > tolerance ? remaining : rate * 2;
 }
 
 /**
@@ -97,25 +116,35 @@ export function allowedMovement(rate, used) {
  * The history is cleared when the combatant's turn starts or ends, so the
  * clamps and the release are per turn.
  *
- * @param {number} rate   base rate in scene units
- * @param {number} used   scene units already spent this turn
- * @returns {number}      scene units available now
+ * @param {number} rate         base rate in scene units
+ * @param {number} used         scene units already spent this turn
+ * @param {number} [tolerance]  leftover below this counts as spent
+ * @returns {number}            scene units available now
  */
-export function combatClamp(rate, used) {
+export function combatClamp(rate, used, tolerance = 0) {
   if (!Number.isFinite(rate) || rate <= 0) return Infinity;
   const spent = Number.isFinite(used) ? Math.max(0, used) : 0;
-  if (spent >= rate * 2 - 1e-9) return Infinity;
-  const level = Math.floor(spent / rate + 1e-9) + 1;
-  return Math.max(0, rate * level - spent);
+  if (spent >= rate * 2 - tolerance) return Infinity;
+  return Math.max(0, rate * clampLevel(rate, spent, tolerance) - spent);
 }
 
 /** Total clamp distance in combat, or Infinity once the second clamp is spent. */
-export function combatClampTotal(rate, used) {
+export function combatClampTotal(rate, used, tolerance = 0) {
   if (!Number.isFinite(rate) || rate <= 0) return Infinity;
   const spent = Number.isFinite(used) ? Math.max(0, used) : 0;
-  if (spent >= rate * 2 - 1e-9) return Infinity;
+  if (spent >= rate * 2 - tolerance) return Infinity;
+  return rate * clampLevel(rate, spent, tolerance);
+}
+
+/**
+ * Which clamp the movement history sits in, 1 for the first.
+ *
+ * A leftover below the tolerance means the previous clamp has been used up, so
+ * the next one is offered instead of an unusable sliver.
+ */
+function clampLevel(rate, spent, tolerance = 0) {
   const level = Math.floor(spent / rate + 1e-9) + 1;
-  return rate * level;
+  return rate * level - spent > tolerance ? level : level + 1;
 }
 
 /**
@@ -178,7 +207,10 @@ export function movementBudget({
   }
 
   const spent = usedInfinite ? baseRate : (Number.isFinite(used) ? Math.max(0, used) : 0);
-  const allowed = combat ? combatClamp(baseRate, spent) : allowedMovement(baseRate, spent);
+  const tolerance = sliverTolerance(grid);
+  const allowed = combat
+    ? combatClamp(baseRate, spent, tolerance)
+    : allowedMovement(baseRate, spent, tolerance);
   const budgetPx = unitsToPixels(allowed, grid);
   return {
     limited: Number.isFinite(budgetPx),
@@ -189,7 +221,7 @@ export function movementBudget({
     units: Number.isFinite(budgetPx) ? allowed : Infinity,
     fallback,
     combat: !!combat,
-    clampTotal: combat ? combatClampTotal(baseRate, spent) : null,
+    clampTotal: combat ? combatClampTotal(baseRate, spent, tolerance) : null,
     mode: combat ? "combat" : "standard"
   };
 }

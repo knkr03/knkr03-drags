@@ -9,6 +9,7 @@ import {
   combatClampTotal,
   movementBudget,
   resolveMovementRate,
+  sliverTolerance,
   unitsToPixels
 } from "../scripts/pathfinder/index.mjs";
 
@@ -153,6 +154,41 @@ test("in combat the budget uses the extending clamp instead of the doubling rule
   const outside = movementBudget({ rate: 30, used: 30, grid });
   assert.equal(outside.mode, "standard");
   assert.equal(outside.budgetPx, 1200, "outside combat the doubling rule is unchanged");
+});
+
+test("a leftover smaller than a couple of pixels counts as spent", () => {
+  // 5 ft / 100 px grid: two pixels is 0.1 ft
+  const tolerance = sliverTolerance(grid);
+  assert.ok(Math.abs(tolerance - 0.1) < 1e-9);
+  assert.equal(sliverTolerance({ size: 100, distance: 0 }), 0);
+  assert.equal(sliverTolerance(null), 0);
+
+  // a drag that stopped on the clamp records a hair under it, because Foundry
+  // measures between the integer waypoints it was given
+  assert.equal(allowedMovement(30, 29.9914, tolerance), 60);
+  assert.equal(combatClamp(30, 29.9914, tolerance), 30.0086);
+  assert.equal(combatClampTotal(30, 29.9914, tolerance), 60);
+
+  // the release at the second clamp is boundary-tolerant too
+  assert.equal(combatClamp(30, 59.99, tolerance), Infinity);
+  assert.equal(combatClampTotal(30, 59.99, tolerance), Infinity);
+
+  // a leftover worth moving (half a foot) is still offered
+  assert.equal(combatClamp(30, 29.5, tolerance), 0.5);
+  assert.equal(allowedMovement(30, 29.5, tolerance), 0.5);
+});
+
+test("the budget treats a sub-pixel leftover as spent", () => {
+  const combat = movementBudget({ rate: 30, used: 29.9914, grid, combat: true });
+  assert.equal(combat.allowed, 30.0086);
+  assert.equal(combat.clampTotal, 60);
+  assert.ok(Math.abs(combat.budgetPx - 600.17) < 0.1);
+
+  const standard = movementBudget({ rate: 30, used: 29.9914, grid });
+  assert.equal(standard.allowed, 60, "outside combat the rate counts as spent");
+
+  const fallback = movementBudget({ rate: null, used: 29.9914, grid, fallbackSpaces: 6 });
+  assert.equal(fallback.allowed, 60);
 });
 
 test("in combat the third drag is unlimited", () => {
