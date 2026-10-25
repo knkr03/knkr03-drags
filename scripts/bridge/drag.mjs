@@ -329,13 +329,19 @@ function drawOverlay() {
 /* ----------------------------------------------------------- wrappers */
 
 function onFindMovementPath(wrapped, waypoints, options) {
+  // libWrapper requires every WRAPPER to chain at least once, even when it
+  // answers with its own result. Systems and other modules (dnd5e, touch-vtt,
+  // path previews) wrap this method too, and libWrapper unregisters -- and
+  // throws from -- any wrapper that returns without calling through. The
+  // chained job is therefore always produced first and is what every early-out
+  // and error path returns.
+  const chained = wrapped.call(this, waypoints, options);
+
   try {
-    if (!Array.isArray(waypoints) || waypoints.length < 2) {
-      return wrapped.call(this, waypoints, options);
-    }
-    if (!setting(SETTINGS.enabled)) return wrapped.call(this, waypoints, options);
+    if (!Array.isArray(waypoints) || waypoints.length < 2) return chained;
+    if (!setting(SETTINGS.enabled)) return chained;
     const context = getDragContext(this);
-    if (!context) return wrapped.call(this, waypoints, options);
+    if (!context) return chained;
 
     // Hold the bypass key: no pathfinding, no collision, no clamp.
     if (bypassActive()) {
@@ -345,10 +351,10 @@ function onFindMovementPath(wrapped, waypoints, options) {
       return { result, promise: Promise.resolve(result), cancel() {} };
     }
 
-    if (!shouldHandle(this, options)) return wrapped.call(this, waypoints, options);
+    if (!shouldHandle(this, options)) return chained;
 
     const { segments } = getGeometry(Maze);
-    if (segments.length === 0) return wrapped.call(this, waypoints, options);
+    if (segments.length === 0) return chained;
 
     const entry = buildPlan(this, waypoints);
     entry.context = context;
@@ -356,7 +362,7 @@ function onFindMovementPath(wrapped, waypoints, options) {
     return { result, promise: Promise.resolve(result), cancel() {} };
   } catch (err) {
     error("findMovementPath failed; falling back to Foundry's path", err);
-    return wrapped.call(this, waypoints, options);
+    return chained;
   }
 }
 

@@ -45,7 +45,9 @@ The archive has `module.json` at its root, as Foundry expects. Then enable the
 module and optionally
 [lib-wrapper](https://foundryvtt.com/packages/lib-wrapper). libWrapper is not
 required; when it is active the wrappers are registered through it, otherwise
-plain prototype wrappers are used.
+plain prototype wrappers are used. Every wrapper chains into the method it
+wraps before answering, which is what lets `dnd5e`, `touch-vtt` and other
+modules wrap the same drag methods without conflict.
 
 Compatibility is pinned to `13.351` because the bridge uses the v13 drag
 pipeline that exists there (`Token#findMovementPath`,

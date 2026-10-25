@@ -388,6 +388,39 @@ test("a running combat switches the budget to the extending clamp", () => {
   globalThis.game.combat = null;
 });
 
+test("every answer still chains into Foundry's own pathfinder", () => {
+  // libWrapper unregisters -- and throws from -- a WRAPPER that returns
+  // without calling through. FakeToken#findMovementPath records the chained
+  // call, so this is the contract test for the real chain.
+  const token = new FakeToken({ id: "token-chain" });
+  makeDrag(token);
+
+  const routed = token.findMovementPath([waypoint(30, 70), waypoint(270, 70)], { preview: true });
+  assert.equal(
+    token.calls.filter(call => call.method === "findMovementPath").length,
+    1,
+    "the routed answer must chain exactly once"
+  );
+  assert.ok(routed.result.length > 2, "the module's route should still be the result");
+
+  token.calls.length = 0;
+  globalThis.game.keyboard.downKeys.add("ShiftLeft");
+  const bypass = token.findMovementPath([waypoint(30, 70), waypoint(270, 70)], { preview: true });
+  globalThis.game.keyboard.downKeys.delete("ShiftLeft");
+  assert.equal(token.calls.filter(call => call.method === "findMovementPath").length, 1);
+  assert.equal(bypass.result.length, 2);
+
+  token.calls.length = 0;
+  const skipped = token.findMovementPath([waypoint(30, 70), waypoint(270, 70)], { ignoreWalls: true });
+  assert.equal(token.calls.filter(call => call.method === "findMovementPath").length, 1);
+  assert.equal(skipped.result.length, 2, "an early-out returns Foundry's own job");
+
+  token.calls.length = 0;
+  const empty = token.findMovementPath([waypoint(30, 70)], { preview: true });
+  assert.equal(token.calls.filter(call => call.method === "findMovementPath").length, 1);
+  assert.equal(empty.result.length, 1);
+});
+
 test("bridge state reports the scene geometry", () => {
   const state = bridgeState();
   assert.equal(state.installed, true);
